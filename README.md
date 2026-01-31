@@ -35,6 +35,12 @@ This directory contains a self-contained, repo-grounded exam for evaluating auto
 Method:
 - Patches were applied onto `template_repo/` and checked (T1/T2/T3), plus spot-checks for T2 “safe mode must not depend on API libraries”.
 
+Participants:
+- `attempts/claude-opus-20260131/`: Claude **Opus 4.5**
+- `attempts/codex-gpt52-20260131/`: OpenAI **gpt-5.2-high** (Codex)
+- `attempts/gemini-cli-2026-01-31/`: Google **gemini-3-pro-preview**
+- `attempts/opencode-20250131/`: **kimi-k2.5** (OpenCode)
+
 Leaderboard (high → low):
 - 100: `attempts/claude-opus-20260131/`
 - 99: `attempts/codex-gpt52-20260131/`
@@ -46,4 +52,3 @@ Notes:
 - Codex: very strong overall; slightly more duplicated logic in `--dry-run` vs reusing the shared helper.
 - OpenCode: passed functional checks, but loads API-related packages at the top of the eval CLI, creating unnecessary dependencies in safe modes.
 - Gemini: passed functional checks, but similarly loads API-related packages before argument parsing; patch also included trailing whitespace warnings.
-
