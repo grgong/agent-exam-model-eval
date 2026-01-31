@@ -39,14 +39,15 @@ Participants:
 
 Leaderboard:
 
-| Rank | Attempt | Agent/model | Score |
-|---:|---|---|---:|
-| 1 | `attempts/claude-opus-20260131/` | Claude Code/Opus 4.5 | 100 |
-| 2 | `attempts/codex-gpt52-20260131/` | Codex CLI/gpt-5.2-high | 99 |
-| 3 | `attempts/opencode-20250131/` | OpenCode/kimi-k2.5 | 92 |
-| 4 | `attempts/gemini-cli-2026-01-31/` | Gemini CLI/gemini-3-pro-preview | 89 |
+| Rank | Attempt | Agent/model | Automated checks (T1/T2/T3) | “Accuracy” (checks pass rate) | Final score |
+|---:|---|---|---:|---:|---:|
+| 1 | `attempts/claude-opus-20260131/` | Claude Code/Opus 4.5 | 3/3 | 100% | 100 |
+| 2 | `attempts/codex-gpt52-20260131/` | Codex CLI/gpt-5.2-high | 3/3 | 100% | 99 |
+| 3 | `attempts/opencode-20250131/` | OpenCode/kimi-k2.5 | 3/3 | 100% | 92 |
+| 4 | `attempts/gemini-cli-2026-01-31/` | Gemini CLI/gemini-3-pro-preview | 3/3 | 100% | 89 |
 
 Notes:
+- All four submissions passed the automated checks; the final score includes manual-review deductions (primarily around T2 safe-mode robustness).
 - **Claude Code (100)**: Best alignment with T2 safe-mode expectations (early exit before importing API-related packages) and strong T3 edge-case handling (no “correct” models case).
 - **Codex CLI (99)**: Strong overall and stricter validation in T1; minor deduction for re-implementing unevaluated-model detection in `--dry-run` rather than reusing `find_unevaluated_models()`.
 - **OpenCode (92)**: Functional checks pass, but T2 imports API-related packages at top-level, making safe modes unnecessarily depend on those packages.
