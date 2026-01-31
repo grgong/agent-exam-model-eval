@@ -2,6 +2,10 @@
 
 This directory contains a self-contained, repo-grounded exam for evaluating autonomous CLI coding agents (e.g., Claude Code / Codex CLI / Gemini CLI) on real-world maintenance tasks in an R-centric codebase.
 
+## Origin
+
+This exam is derived from a public benchmark published by Posit in the “Which LLM writes the best R code?” blog series (see `https://posit.co/blog/r-llm-evaluation-03/`) and its companion GitHub repository `skaltman/model-eval`.
+
 ## Purpose
 
 - Compare agents on **code reading**, **surgical edits**, **safe CLI design**, and **Shiny app feature work**.
