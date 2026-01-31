@@ -4,7 +4,16 @@ This directory contains a self-contained, repo-grounded exam for evaluating auto
 
 ## Origin
 
-This exam is derived from a public benchmark published by Posit in the “Which LLM writes the best R code?” blog series (see `https://posit.co/blog/r-llm-evaluation-03/`) and its companion GitHub repository `skaltman/model-eval`.
+This exam is derived from a public benchmark published by Posit in the “Which LLM writes the best R code?” blog series:
+- Blog: [https://posit.co/blog/r-llm-evaluation-03/](https://posit.co/blog/r-llm-evaluation-03/)
+- Upstream repo: [https://github.com/skaltman/model-eval](https://github.com/skaltman/model-eval)
+
+## About this repo
+
+This repository packages that benchmark into an “agent exam” format:
+- A frozen baseline snapshot (`template_repo/`) plus the baseline commit (`BASELINE_COMMIT.txt`)
+- Participant instructions (`AGENTS.md`) and grading utilities (`scripts/`)
+- Collected submissions under `attempts/` and a written results summary in this README
 
 ## Purpose
 
