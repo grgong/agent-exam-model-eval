@@ -40,10 +40,10 @@ Attribution:
 - The grading scripts under `scripts/` were authored for this exam and are adapted to the upstream repo’s structure and expected behaviors (they are not upstream-provided tests).
 
 Participants:
-- `attempts/claude-opus-20260131/`: Claude **Opus 4.5**
-- `attempts/codex-gpt52-20260131/`: OpenAI **gpt-5.2-high** (Codex)
-- `attempts/gemini-cli-2026-01-31/`: Google **gemini-3-pro-preview**
-- `attempts/opencode-20250131/`: **kimi-k2.5** (OpenCode)
+- `attempts/claude-opus-20260131/`: Claude code **Opus 4.5**
+- `attempts/codex-gpt52-20260131/`: Codex cli **gpt-5.2-high**
+- `attempts/gemini-cli-2026-01-31/`: Gemini cli **gemini-3-pro-preview**
+- `attempts/opencode-20250131/`: Opencode **kimi-k2.5**
 
 Leaderboard (high → low):
 - 100: `attempts/claude-opus-20260131/`
