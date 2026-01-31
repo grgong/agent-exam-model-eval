@@ -33,17 +33,24 @@ This directory contains a self-contained, repo-grounded exam for evaluating auto
 ## Results (2026-01-31)
 
 Method:
-- Patches were applied onto `template_repo/` and checked (T1/T2/T3), plus spot-checks for T2 “safe mode must not depend on API libraries”.
+- Each `attempts/<name>/SUBMISSION.patch` was applied onto `template_repo/`.
+- Automated checks were run via `scripts/run_checks.sh`:
+  - T1: `scripts/check_task1.R`
+  - T2: `scripts/check_task2.sh`
+  - T3: `scripts/check_task3.R`
+- Manual review focused on T2 “safe mode” robustness:
+  - In safe modes (`--help`, `--list-models`, `--dry-run`), the script should exit successfully without requiring API keys.
+  - Preferably, safe modes should also avoid importing API-related packages (e.g., `ellmer`, `vitals`) before exiting, so that help/list/dry-run do not depend on those packages being installed.
 
 Attribution:
 - The baseline snapshot in `template_repo/` is derived from the upstream repo `skaltman/model-eval` (commit in `BASELINE_COMMIT.txt`).
 - The grading scripts under `scripts/` were authored for this exam and are adapted to the upstream repo’s structure and expected behaviors (they are not upstream-provided tests).
 
 Participants:
-- `attempts/claude-opus-20260131/`: Claude code **Opus 4.5**
-- `attempts/codex-gpt52-20260131/`: Codex cli **gpt-5.2-high**
-- `attempts/gemini-cli-2026-01-31/`: Gemini cli **gemini-3-pro-preview**
-- `attempts/opencode-20250131/`: Opencode **kimi-k2.5**
+- `attempts/claude-opus-20260131/`: Claude Code — **Opus 4.5**
+- `attempts/codex-gpt52-20260131/`: Codex CLI — **gpt-5.2-high**
+- `attempts/gemini-cli-2026-01-31/`: Gemini CLI — **gemini-3-pro-preview**
+- `attempts/opencode-20250131/`: OpenCode — **kimi-k2.5**
 
 Leaderboard (high → low):
 - 100: `attempts/claude-opus-20260131/`
@@ -51,8 +58,27 @@ Leaderboard (high → low):
 - 92: `attempts/opencode-20250131/`
 - 89: `attempts/gemini-cli-2026-01-31/`
 
-Notes:
-- Claude: best alignment with the “safe mode exits before loading API-related libs”, plus good edge-case handling for the efficiency view.
-- Codex: very strong overall; slightly more duplicated logic in `--dry-run` vs reusing the shared helper.
-- OpenCode: passed functional checks, but loads API-related packages at the top of the eval CLI, creating unnecessary dependencies in safe modes.
-- Gemini: passed functional checks, but similarly loads API-related packages before argument parsing; patch also included trailing whitespace warnings.
+Detailed notes:
+
+### `attempts/claude-opus-20260131/` (Score: 100)
+
+- T1: Preserves `api_args` and `release_date` in `parse_model_configs()`, with `YYYY-MM-DD` validation.
+- T2: Implements CLI parsing first and exits early in safe modes before importing API-related packages; safe modes do not require keys.
+- T3: Adds `usd_per_correct` with safe divide-by-zero handling, adds a pricing column, and adds an Efficiency view. Also handles the edge case where there are no models with any correct answers.
+
+### `attempts/codex-gpt52-20260131/` (Score: 99)
+
+- T1: Strong validation (e.g., `release_date` is both format-checked and date-parsed; `api_args` structure validated).
+- T2: Clean separation of safe modes vs full evaluation; `--only` validation is strict and clear; safe modes do not require keys.
+- Deduction: In `--dry-run`, it re-implements “unevaluated model” detection by scanning `results_dir` rather than directly reusing the shared helper (`find_unevaluated_models()`). Functionally correct, but slightly higher drift/maintenance risk.
+
+### `attempts/opencode-20250131/` (Score: 92)
+
+- Automated checks pass for T1/T2/T3.
+- Deduction: `eval/run_eval.R` imports API-related packages at the top-level (before argument parsing), which makes safe modes unnecessarily depend on those packages being installed.
+
+### `attempts/gemini-cli-2026-01-31/` (Score: 89)
+
+- Automated checks pass for T1/T2/T3.
+- Deduction: Same safe-mode dependency issue as OpenCode (API-related packages imported before argument parsing).
+- Deduction: Submission patch includes trailing whitespace warnings on apply (see `attempts/gemini-cli-2026-01-31/SUBMISSION.patch`).
