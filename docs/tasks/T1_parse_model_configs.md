@@ -1,21 +1,20 @@
 # T1 — Fix YAML config propagation (35 pts)
 
-文件：`R/eval_functions.R`
+File: `R/eval_functions.R`
 
-## 背景
+## Background
 
-`data/models.yaml` 中部分模型带有 `api_args:`（例如 thinking 配置）。当前代码中 `build_chat_args()` 试图读取 `config$api_args`，但 `parse_model_configs()` 并没有把 YAML 的 `api_args` 放进 config，导致这些配置静默失效。
+Some models in `data/models.yaml` include `api_args:` (e.g., “thinking” configs). The code in `build_chat_args()` is intended to forward `config$api_args`, but `parse_model_configs()` currently drops it, causing those settings to silently do nothing.
 
-## 任务
+## Task
 
-在不改变整体结构的前提下：
+Without changing the overall structure:
 
-1) 修复 `parse_model_configs()`：让每个 model config 包含 `api_args`（如果 YAML 里有），并保留 `release_date`（建议校验格式为 `YYYY-MM-DD`）。
-2) 确保 `build_chat_args()` 能正确把 `api_args` 传给下游（当前已有逻辑，但要确保字段存在且类型正确）。
-3) 让错误信息更可读（例如缺字段、release_date 格式非法时）。
+1) Fix `parse_model_configs()` so each model config includes `api_args` when present in YAML, and preserve `release_date` (validate `YYYY-MM-DD` format).
+2) Ensure `build_chat_args()` correctly forwards `api_args` downstream (field exists and has the correct type).
+3) Improve error messages (missing fields, invalid `release_date`, etc.).
 
-## 验收标准
+## Acceptance
 
-- `parse_model_configs("data/models.yaml")[["sonnet_4_thinking"]]$api_args` 非空，且能访问到 `thinking$type` 与 `thinking$budget_tokens`（具体值以 YAML 为准）。
-- `../../scripts/run_checks.sh ...` 的 T1 检查通过。
-
+- `parse_model_configs("data/models.yaml")[["sonnet_4_thinking"]]$api_args` is non-NULL and has `thinking$type` and `thinking$budget_tokens` (values per YAML).
+- The grader’s T1 checks pass.

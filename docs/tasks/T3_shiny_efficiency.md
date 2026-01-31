@@ -1,26 +1,25 @@
-# T3 — Add “efficiency” metric to the Shiny app (30 pts)
+# T3 — Add an “efficiency” metric to the Shiny app (30 pts)
 
-文件：`R/helpers.R`、`app.R`
+Files: `R/helpers.R`, `app.R`
 
-## 目标
+## Goal
 
-在 Shiny app 增加一个效率指标，推荐：
+Add an efficiency metric, recommended:
 
 - `usd_per_correct = price / correct`
 
-并在 UI 中展示：
+And expose it in the UI:
 
-- Pricing table 增加一列（例如 `Cost / Correct`）
-- 新增一个 tab/plot 展示效率（例如 x=Cost/Correct, y=%Correct）
+- Add a pricing table column (e.g., `Cost / Correct`)
+- Add a new efficiency-focused tab/plot (e.g., x = Cost/Correct, y = %Correct)
 
-## 约束
+## Constraints
 
-- 要处理除零：当 `correct == 0` 时，`usd_per_correct` 不能是 `Inf`（建议设为 `NA_real_` 并在图/表中自然显示）。
-- 不要破坏现有 `Performance` 与 `Cost vs. Performance` 两个图。
+- Handle divide-by-zero: when `correct == 0`, `usd_per_correct` must not be `Inf` (use `NA_real_` or similar).
+- Do not break the existing `Performance` and `Cost vs. Performance` plots.
 
-## 验收标准
+## Acceptance
 
-- `compute_summary_stats()` 返回包含 `usd_per_correct` 的 tibble（或同义字段名，但需在表格中展示）。
-- `app.R` 里新增一个与效率相关的 `nav_panel(...)` 和对应 `plotOutput(...)`。
-- `../../scripts/run_checks.sh ...` 的 T3 检查通过。
-
+- `compute_summary_stats()` returns a tibble containing `usd_per_correct` (or an equivalent field that is shown in the table).
+- `app.R` adds an efficiency-related `nav_panel(...)` and a corresponding `plotOutput(...)`.
+- The grader’s T3 checks pass.

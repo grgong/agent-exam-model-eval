@@ -1,31 +1,30 @@
-# Grading rubric（阅卷参考）
+# Grading rubric
 
-总分 100。
+Total: 100 points.
 
-## 通用（所有题）
+## General (all tasks)
 
-- 可运行性（10）：自检脚本可跑；R 脚本不因缺 key 在 dry-run 失败
-- 代码质量（10）：改动聚焦、命名清晰、风格一致、无明显坏味道
-- 交付物（5）：`REPORT.md` 有清晰说明；`SUBMISSION.patch` 可读
+- Runnable checks (10): the grading checks can run; safe modes do not fail due to missing keys
+- Code quality (10): focused diffs, clear naming, consistent style
+- Deliverables (5): `REPORT.md` is clear; `SUBMISSION.patch` is readable/applicable
 
-## T1（35）
+## T1 (35)
 
-- `api_args` 真正传递并可被 `build_chat_args()` 使用（15）
-- `release_date` 等字段处理合理（校验/保留；不破坏现有行为）（10）
-- 错误信息清晰、易定位（5）
-- 自检通过（5）
+- `api_args` is preserved and forwarded via `build_chat_args()` (15)
+- `release_date` handling is reasonable (validated/preserved, no regressions) (10)
+- Errors are actionable and easy to locate (5)
+- Checks pass (5)
 
-## T2（35）
+## T2 (35)
 
-- `--help` 输出清晰（5）
-- `--list-models` 输出可机器读取（建议 TSV/CSV）（10）
-- `--dry-run` 不调用任何模型 API 且可在无 key 情况下运行（15）
-- `--only` 过滤逻辑正确（5）
+- `--help` output is clear (5)
+- `--list-models` output is machine-readable (TSV/CSV recommended) (10)
+- `--dry-run` never calls any model API and works without keys (15)
+- `--only` filtering is correct (5)
 
-## T3（30）
+## T3 (30)
 
-- 新增效率指标计算正确且健壮（除零/缺失处理）（12）
-- pricing table 增加对应列且格式正确（8）
-- app 增加新 tab/plot 且不破坏现有功能（6）
-- 自检通过（4）
-
+- Efficiency metric is correct and robust (divide-by-zero / missing values) (12)
+- Pricing table shows the new column with correct formatting (8)
+- App adds a new efficiency view without breaking existing plots (6)
+- Checks pass (4)
