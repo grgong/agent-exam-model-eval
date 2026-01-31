@@ -39,7 +39,7 @@ Participants:
 
 Leaderboard:
 
-| Rank | Attempt | Agent/model | Automated checks (T1/T2/T3) | “Accuracy” (checks pass rate) | Final score |
+| Rank | Attempt | Agent/model | Automated checks (T1/T2/T3) | Autograder pass rate | Final score |
 |---:|---|---|---:|---:|---:|
 | 1 | `attempts/claude-opus-20260131/` | Claude Code/Opus 4.5 | 3/3 | 100% | 100 |
 | 2 | `attempts/codex-gpt52-20260131/` | Codex CLI/gpt-5.2-high | 3/3 | 100% | 99 |
@@ -47,6 +47,7 @@ Leaderboard:
 | 4 | `attempts/gemini-cli-2026-01-31/` | Gemini CLI/gemini-3-pro-preview | 3/3 | 100% | 89 |
 
 Notes:
+- “Autograder pass rate” is the fraction of exam checks passed; it is **not** the upstream ARE benchmark “code generation accuracy”.
 - All four submissions passed the automated checks; the final score includes manual-review deductions (primarily around T2 safe-mode robustness).
 - **Claude Code (100)**: Best alignment with T2 safe-mode expectations (early exit before importing API-related packages) and strong T3 edge-case handling (no “correct” models case).
 - **Codex CLI (99)**: Strong overall and stricter validation in T1; minor deduction for re-implementing unevaluated-model detection in `--dry-run` rather than reusing `find_unevaluated_models()`.
