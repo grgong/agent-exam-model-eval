@@ -1,0 +1,448 @@
+diff --git a/R/eval_functions.R b/R/eval_functions.R
+index fb4707c..5e70c2f 100644
+--- a/R/eval_functions.R
++++ b/R/eval_functions.R
+@@ -15,8 +15,27 @@ library(dplyr)
+ parse_model_configs <- function(yaml_path) {
+   yaml_data <- read_yaml(yaml_path)
+ 
++  validate_release_date <- function(release_date, model_label) {
++    release_date_chr <- as.character(release_date %||% "")
++    if (!grepl("^\\d{4}-\\d{2}-\\d{2}$", release_date_chr)) {
++      stop(glue(
++        "Model '{model_label}' has invalid release_date '{release_date_chr}' (expected YYYY-MM-DD)"
++      ))
++    }
++    parsed <- as.Date(release_date_chr)
++    if (is.na(parsed)) {
++      stop(glue(
++        "Model '{model_label}' has invalid release_date '{release_date_chr}'"
++      ))
++    }
++
++    release_date_chr
++  }
++
+   models <- yaml_data$models %>%
+     map(function(model) {
++      model_label <- model$model_id %||% model$name %||% "<unknown>"
++
+       # Validate required fields
+       required <- c(
+         "name",
+@@ -30,7 +49,14 @@ parse_model_configs <- function(yaml_path) {
+       missing <- setdiff(required, names(model))
+       if (length(missing) > 0) {
+         stop(glue(
+-          "Model '{model$name}' missing required fields: {paste(missing, collapse=', ')}"
++          "Model '{model_label}' missing required fields: {paste(missing, collapse=', ')}"
++        ))
++      }
++
++      # Validate optional fields with structural requirements
++      if (!is.null(model$api_args) && !is.list(model$api_args)) {
++        stop(glue(
++          "Model '{model_label}' has invalid api_args (expected a YAML mapping/object)"
+         ))
+       }
+ 
+@@ -40,10 +66,14 @@ parse_model_configs <- function(yaml_path) {
+         model_id = model$model_id,
+         api_model_id = model$api_model_id,
+         provider = model$provider,
++        release_date = validate_release_date(model$release_date, model_label),
++        input_price = model$input_price,
++        output_price = model$output_price,
+         thinking = model$thinking %||% FALSE,
+         thinking_budget = model$thinking_budget %||% 2000,
+         base_url = model$base_url %||% NULL,
+-        api_key_env = model$api_key_env %||% NULL
++        api_key_env = model$api_key_env %||% NULL,
++        api_args = model$api_args %||% NULL
+       )
+ 
+       config
+@@ -101,6 +131,11 @@ build_chat_args <- function(config) {
+ 
+   # Add api_args if specified in YAML
+   if (!is.null(config$api_args)) {
++    if (!is.list(config$api_args)) {
++      stop(glue(
++        "Model '{config$model_id %||% config$name}' has invalid api_args (expected a list)"
++      ))
++    }
+     args$api_args <- config$api_args
+   }
+ 
+diff --git a/R/helpers.R b/R/helpers.R
+index 72b749b..e5f9f29 100644
+--- a/R/helpers.R
++++ b/R/helpers.R
+@@ -51,6 +51,13 @@ compute_summary_stats <- function(
+       model_info |> select(model_join, provider),
+       by = "model_join"
+     ) |>
++    mutate(
++      usd_per_correct = if_else(
++        correct > 0,
++        price / correct,
++        NA_real_
++      )
++    ) |>
+     arrange(desc(percent_correct))
+ }
+ 
+@@ -173,6 +180,73 @@ plot_cost_vs_performance <- function(summary_data) {
+     )
+ }
+ 
++#' Create efficiency scatter plot (cost per correct vs. accuracy)
++#'
++#' @param summary_data Summary statistics with usd_per_correct, percent_correct, and provider columns
++#' @return ggplot object
++plot_efficiency <- function(summary_data) {
++  plot_data <- summary_data |>
++    mutate(model_display = as.character(model_display)) |>
++    filter(!is.na(usd_per_correct)) |>
++    mutate(
++      color = case_when(
++        provider == "Anthropic" ~ "#be8bd4ff",
++        provider == "OpenAI" ~ "#80c8d3ff",
++        provider == "Google" ~ "#f6e8c3"
++      )
++    )
++
++  # Adjust min.segment.length based on number of models
++  n_models <- nrow(plot_data)
++  min_seg_length <- if_else(n_models < 10, 1.2, 0.5)
++
++  ggplot(plot_data, aes(usd_per_correct, percent_correct, color = provider)) +
++    geom_point(size = 5) +
++    geom_label_repel(
++      aes(
++        label = model_display,
++        fill = alpha(color, 0.8),
++        segment.color = color
++      ),
++      force = 3,
++      max.overlaps = 20,
++      size = 7,
++      color = "#333333",
++      show.legend = FALSE,
++      min.segment.length = min_seg_length,
++      box.padding = 0.5
++    ) +
++    scale_color_identity(aesthetics = "segment.color") +
++    scale_fill_identity() +
++    scale_x_continuous(labels = label_dollar()) +
++    scale_y_continuous(
++      labels = label_percent(),
++      breaks = breaks_width(0.05)
++    ) +
++    scale_color_manual(
++      values = c(
++        "Anthropic" = "#be8bd4ff",
++        "OpenAI" = "#80c8d3ff",
++        "Google" = "#f6e8c3"
++      )
++    ) +
++    labs(
++      x = "USD per Correct",
++      y = "Percent Correct",
++      color = "Provider"
++    ) +
++    theme_light() +
++    theme(
++      plot.subtitle = element_text(face = "italic", size = 12),
++      plot.margin = margin(10, 10, 20, 10),
++      axis.title = element_text(size = 14),
++      title = element_text(size = 16),
++      axis.text = element_text(size = 12),
++      legend.position = "bottom",
++      legend.text = element_text(size = 12)
++    )
++}
++
+ # Table Functions ------------------------------------------------------------
+ 
+ #' Create pricing and performance table
+@@ -191,6 +265,7 @@ create_pricing_table <- function(summary_data, model_info) {
+       `Input Tokens Used` = input,
+       `Output Tokens Used` = output,
+       `Total Cost` = price,
++      `Cost / Correct` = usd_per_correct,
+       `% Correct` = percent_correct
+     ) |>
+     gt::gt() |>
+@@ -198,7 +273,8 @@ create_pricing_table <- function(summary_data, model_info) {
+       columns = c(
+         `Input (per 1M tokens)`,
+         `Output (per 1M tokens)`,
+-        `Total Cost`
++        `Total Cost`,
++        `Cost / Correct`
+       ),
+       currency = "USD",
+       decimals = 2
+diff --git a/app.R b/app.R
+index 2ce895a..f479179 100644
+--- a/app.R
++++ b/app.R
+@@ -120,6 +120,16 @@ ui <- page_navbar(
+           )
+         ),
+ 
++        nav_panel(
++          "Efficiency",
++          card(
++            card_header("Cost efficiency (USD per correct)"),
++            card_body(
++              plotOutput("efficiency_plot", height = "600px")
++            )
++          )
++        ),
++
+         nav_panel(
+           "Pricing Details",
+           card(
+@@ -225,6 +235,13 @@ server <- function(input, output, session) {
+     plot_cost_vs_performance(eval_summary())
+   })
+ 
++  # Efficiency plot
++  output$efficiency_plot <- renderPlot({
++    req(nrow(eval_summary()) > 0)
++
++    plot_efficiency(eval_summary())
++  })
++
+   # Pricing table
+   output$pricing_table <- render_gt({
+     req(nrow(eval_summary()) > 0)
+diff --git a/eval/run_eval.R b/eval/run_eval.R
+index b47ce9e..9eaf41b 100644
+--- a/eval/run_eval.R
++++ b/eval/run_eval.R
+@@ -1,7 +1,163 @@
+-# Runs the `are` eval for models listed in data/models.yaml
+-# Will skip models that have already been run (by looking in results_rds)
++# Runs the `are` eval for models listed in a YAML file
++# Will skip models that have already been run (by looking in results_dir)
+ # Combines all rds results into data/data_combined.rds
+ 
++print_usage <- function() {
++  cat(
++    paste0(
++      "Usage: Rscript eval/run_eval.R [options]\n\n",
++      "Options:\n",
++      "  --help                 Print this help and exit 0\n",
++      "  --yaml <path>           Path to models.yaml (default: data/models.yaml)\n",
++      "  --results-dir <path>    Directory containing .rds results (default: results_rds)\n",
++      "  --list-models           Print model list (TSV) and exit 0\n",
++      "  --dry-run               Print unevaluated model IDs and exit 0 (no API calls)\n",
++      "  --only <id1,id2,...>    Only consider these model IDs\n"
++    )
++  )
++}
++
++parse_args <- function(args) {
++  opts <- list(
++    help = FALSE,
++    yaml = "data/models.yaml",
++    results_dir = "results_rds",
++    list_models = FALSE,
++    dry_run = FALSE,
++    only = NULL
++  )
++
++  i <- 1
++  while (i <= length(args)) {
++    arg <- args[[i]]
++    if (arg %in% c("--help", "-h")) {
++      opts$help <- TRUE
++      i <- i + 1
++    } else if (arg == "--yaml") {
++      if (i == length(args)) stop("--yaml requires a path")
++      opts$yaml <- args[[i + 1]]
++      i <- i + 2
++    } else if (arg == "--results-dir") {
++      if (i == length(args)) stop("--results-dir requires a path")
++      opts$results_dir <- args[[i + 1]]
++      i <- i + 2
++    } else if (arg == "--list-models") {
++      opts$list_models <- TRUE
++      i <- i + 1
++    } else if (arg == "--dry-run") {
++      opts$dry_run <- TRUE
++      i <- i + 1
++    } else if (arg == "--only") {
++      if (i == length(args)) stop("--only requires a comma-separated list")
++      only_raw <- args[[i + 1]]
++      only_ids <- trimws(unlist(strsplit(only_raw, ",", fixed = TRUE)))
++      only_ids <- only_ids[nzchar(only_ids)]
++      if (length(only_ids) == 0) stop("--only requires at least one model id")
++      opts$only <- only_ids
++      i <- i + 2
++    } else {
++      stop(paste0("Unknown argument: ", arg))
++    }
++  }
++
++  opts
++}
++
++resolve_repo_path <- function(path) {
++  if (grepl("^(\\/|[A-Za-z]:)", path)) {
++    return(path)
++  }
++  here::here(path)
++}
++
++opts <- parse_args(commandArgs(trailingOnly = TRUE))
++
++if (isTRUE(opts$help)) {
++  print_usage()
++  quit(save = "no", status = 0, runLast = FALSE)
++}
++
++yaml_path <- resolve_repo_path(opts$yaml)
++results_dir <- resolve_repo_path(opts$results_dir)
++
++# ============================================================================
++# Safe modes (no model calls; no API key required)
++# ============================================================================
++
++source(here::here("R/eval_functions.R"))
++
++if (isTRUE(opts$list_models)) {
++  model_configs <- parse_model_configs(yaml_path)
++  if (!is.null(opts$only)) {
++    unknown <- setdiff(opts$only, names(model_configs))
++    if (length(unknown) > 0) {
++      stop(paste0("Unknown model id(s) in --only: ", paste(unknown, collapse = ", ")))
++    }
++    model_configs <- model_configs[opts$only]
++  }
++
++  model_table <- do.call(
++    rbind,
++    lapply(
++      model_configs,
++      function(cfg) {
++        data.frame(
++          model_id = cfg$model_id,
++          name = cfg$name,
++          provider = cfg$provider,
++          release_date = cfg$release_date,
++          api_model_id = cfg$api_model_id,
++          stringsAsFactors = FALSE
++        )
++      }
++    )
++  )
++
++  write.table(
++    model_table,
++    file = "",
++    sep = "\t",
++    row.names = FALSE,
++    col.names = TRUE,
++    quote = FALSE
++  )
++
++  quit(save = "no", status = 0, runLast = FALSE)
++}
++
++if (isTRUE(opts$dry_run)) {
++  model_configs <- parse_model_configs(yaml_path)
++
++  candidate_ids <- names(model_configs)
++  if (!is.null(opts$only)) {
++    unknown <- setdiff(opts$only, candidate_ids)
++    if (length(unknown) > 0) {
++      stop(paste0("Unknown model id(s) in --only: ", paste(unknown, collapse = ", ")))
++    }
++    candidate_ids <- intersect(candidate_ids, opts$only)
++  }
++
++  existing_ids <- character()
++  if (fs::dir_exists(results_dir)) {
++    existing_files <- fs::dir_ls(results_dir, glob = "*.rds")
++    existing_ids <- fs::path_ext_remove(fs::path_file(existing_files))
++  }
++
++  unevaluated_ids <- setdiff(candidate_ids, existing_ids)
++
++  if (length(unevaluated_ids) == 0) {
++    cat("No models to evaluate.\n")
++  } else {
++    cat(paste(unevaluated_ids, collapse = "\n"), "\n", sep = "")
++  }
++
++  quit(save = "no", status = 0, runLast = FALSE)
++}
++
++# ============================================================================
++# Full evaluation mode
++# ============================================================================
++
+ library(ellmer)
+ library(vitals)
+ library(purrr)
+@@ -10,26 +166,27 @@ library(glue)
+ # Source helper functions
+ source(here::here("R/task_definition.R"))
+ source(here::here("R/data_loading.R"))
+-source(here::here("R/eval_functions.R"))
+ 
+ # Configuration
+-YAML_PATH <- here::here("data/models.yaml")
+-RESULTS_DIR <- here::here("results_rds")
+ LOG_DIR <- here::here("logs")
+ SCORER_MODEL <- "claude-3-7-sonnet-latest"
+ 
+ # Set up logging
+ vitals::vitals_log_dir_set(LOG_DIR)
+ 
+-# ============================================================================
+-# Run Evaluation
+-# ============================================================================
+-
+ # Parse YAML configuration
+-model_configs <- parse_model_configs(YAML_PATH)
++model_configs <- parse_model_configs(yaml_path)
++
++if (!is.null(opts$only)) {
++  unknown <- setdiff(opts$only, names(model_configs))
++  if (length(unknown) > 0) {
++    stop(paste0("Unknown model id(s) in --only: ", paste(unknown, collapse = ", ")))
++  }
++  model_configs <- model_configs[opts$only]
++}
+ 
+ # Find unevaluated models
+-unevaluated <- find_unevaluated_models(model_configs, RESULTS_DIR)
++unevaluated <- find_unevaluated_models(model_configs, results_dir)
+ 
+ # Run evaluations if needed
+ if (length(unevaluated) > 0) {
+@@ -41,7 +198,7 @@ if (length(unevaluated) > 0) {
+     model_configs = model_configs,
+     unevaluated_ids = unevaluated,
+     model_eval_fn = model_eval,
+-    results_dir = RESULTS_DIR,
++    results_dir = results_dir,
+     scorer_chat = scorer_chat
+   )
+ 
+@@ -56,8 +213,8 @@ if (length(unevaluated) > 0) {
+ 
+ # Combine results
+ combine_results(
+-  yaml_path = YAML_PATH,
+-  results_dir = RESULTS_DIR,
++  yaml_path = yaml_path,
++  results_dir = results_dir,
+   load_model_info_fn = load_model_info,
+   load_eval_results_fn = load_eval_results,
+   process_eval_data_fn = process_eval_data,

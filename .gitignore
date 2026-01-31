@@ -1,0 +1,13 @@
+.Rhistory
+.RData
+.Rproj.user/
+.DS_Store
+
+# Local agent configs
+.claude/
+
+# Attempt working copies (should not be committed)
+attempts/*/model-eval/
+
+# Temporary directories
+tmp/
