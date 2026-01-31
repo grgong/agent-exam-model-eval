@@ -35,6 +35,10 @@ This directory contains a self-contained, repo-grounded exam for evaluating auto
 Method:
 - Patches were applied onto `template_repo/` and checked (T1/T2/T3), plus spot-checks for T2 “safe mode must not depend on API libraries”.
 
+Attribution:
+- The baseline snapshot in `template_repo/` is derived from the upstream repo `skaltman/model-eval` (commit in `BASELINE_COMMIT.txt`).
+- The grading scripts under `scripts/` were authored for this exam and are adapted to the upstream repo’s structure and expected behaviors (they are not upstream-provided tests).
+
 Participants:
 - `attempts/claude-opus-20260131/`: Claude **Opus 4.5**
 - `attempts/codex-gpt52-20260131/`: OpenAI **gpt-5.2-high** (Codex)
